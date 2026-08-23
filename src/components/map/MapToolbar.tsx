@@ -16,7 +16,8 @@ export function MapToolbar({ viewerRef }: MapToolbarProps) {
   async function zoomToDemo() {
     if (!viewerRef.current) return;
     try {
-      const Cesium = await import("cesium");
+      // @ts-expect-error - Cesium is loaded globally via CDN script
+      const Cesium = window.Cesium;
       const v = viewerRef.current as Record<string, unknown>;
       (v.camera as { flyTo: (opts: unknown) => void }).flyTo({
         destination: Cesium.Cartesian3.fromDegrees(85.0960, 25.5902, 400),
