@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { Eye, EyeOff, Loader2, Layers } from "lucide-react";
@@ -13,7 +13,8 @@ const DEMO_USERS = [
   { email: "analyst@bhumap.gov.in", password: "Analyst@123", role: "GIS Analyst" },
 ];
 
-export default function LoginPage() {
+// LoginForm is extracted so useSearchParams can be used inside Suspense
+function LoginForm() {
   const [email, setEmail] = useState("authority@bhumap.gov.in");
   const [password, setPassword] = useState("Auth@123");
   const [showPassword, setShowPassword] = useState(false);
@@ -21,6 +22,22 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const { setUser } = useAuthStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  /** Sets session cookie via server-side API so middleware sees it immediately */
+  async function setSessionCookie() {
+    await fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "set" }),
+    });
+  }
+
+  /** Redirect to the originally requested page (if any) or dashboard */
+  function redirectAfterLogin() {
+    const from = searchParams.get("from");
+    router.push(from && from.startsWith("/") ? from : "/dashboard");
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -42,7 +59,8 @@ export default function LoginPage() {
         role: roleMap[demoUser.role] as never,
         department: "Demo Department",
       });
-      router.push("/dashboard");
+      setSessionCookie();   // ← write cookie for Edge middleware
+      redirectAfterLogin();
       return;
     }
 
@@ -67,7 +85,8 @@ export default function LoginPage() {
         role: profile?.role ?? "public_viewer",
         department: profile?.department ?? undefined,
       });
-      router.push("/dashboard");
+      setSessionCookie();   // ← write cookie for Edge middleware
+      redirectAfterLogin();
     }
     setLoading(false);
   }
@@ -375,5 +394,14 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Suspense wrapper required by Next.js when using useSearchParams in a page
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

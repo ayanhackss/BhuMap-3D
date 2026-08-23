@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMapStore, LayerId } from "@/store/mapStore";
 import { Eye, EyeOff, ChevronDown, ChevronRight } from "lucide-react";
@@ -35,7 +35,7 @@ export function LayerPanel() {
       style={{ background: "var(--color-paper)", borderRight: "1px solid var(--color-border)", width: 268 }}>
       {/* Header */}
       <div className="px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--color-border)" }}>
-        <div className="text-sm font-semibold text-white">Layer Control</div>
+        <div className="text-sm font-semibold" style={{ color: "var(--color-ink)" }}>Layer Control</div>
         <div className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>Toggle and configure map layers</div>
       </div>
 

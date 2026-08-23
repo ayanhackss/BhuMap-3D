@@ -3,24 +3,21 @@ import type { NextRequest } from "next/server";
 
 /**
  * Edge middleware auth guard.
- * Reads the persisted Zustand auth cookie ("bhumap-auth") set by zustand/middleware persist.
- * If the cookie is absent or the parsed user is null, redirect to /login.
- * This prevents the flash-of-null that the client-only useEffect guard caused.
+ *
+ * Reads the explicit "bhumap-session" cookie that the login page writes on
+ * successful authentication. We use a dedicated cookie (not Zustand's
+ * localStorage persist) because:
+ *   - localStorage is browser-side only — middleware runs on the Edge
+ *   - Zustand persist uses localStorage by default, not cookies
+ *
+ * The login page must call:
+ *   document.cookie = "bhumap-session=1; path=/; max-age=86400; SameSite=Lax";
+ * on success, and clear it on logout.
  */
 export function middleware(request: NextRequest) {
-  const raw = request.cookies.get("bhumap-auth")?.value;
-  let authenticated = false;
+  const session = request.cookies.get("bhumap-session")?.value;
 
-  if (raw) {
-    try {
-      const parsed = JSON.parse(decodeURIComponent(raw));
-      authenticated = Boolean(parsed?.state?.user);
-    } catch {
-      authenticated = false;
-    }
-  }
-
-  if (!authenticated) {
+  if (!session) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", request.nextUrl.pathname);
     return NextResponse.redirect(loginUrl);

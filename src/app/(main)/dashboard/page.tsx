@@ -16,12 +16,17 @@ import { getStatusBadgeClass, formatArea, truncate } from "@/lib/utils";
 
 /* ── Fetch all dashboard data in one combined async function ── */
 async function fetchAllDashboardData() {
-  const [statsRes, buildingsRes, propertiesRes, conflictsRes] = await Promise.all([
-    supabase.rpc("get_dashboard_stats"),
+  const [parcelsRes, buildingsRes, propertiesRes, conflictsRes, surveysRes] = await Promise.all([
+    supabase.from("parcels").select("id", { count: "exact", head: true }),
     supabase.from("buildings").select("building_type, status, ai_confidence"),
     supabase.from("properties").select("approval_status, id"),
     supabase.from("conflicts").select("*").order("created_at", { ascending: false }).limit(5),
+    supabase.from("surveys").select("id", { count: "exact", head: true }),
   ]);
+
+  const parcelCount   = parcelsRes.count  ?? 0;
+  const surveyCount   = surveysRes.count  ?? 0;
+  const buildingCount = buildingsRes.data?.length ?? 0;
 
   // Build property breakdown
   const counts: Record<string, number> = {};
@@ -30,16 +35,62 @@ async function fetchAllDashboardData() {
   });
   const propertyBreakdown = Object.entries(counts).map(([name, value]) => ({ name, value }));
 
+  // If DB is empty (no data seeded), use static demo values so KPI cards aren't all 0
+  const isEmptyDB = parcelCount === 0 && buildingCount === 0;
+  const stats = isEmptyDB
+    ? {
+        total_parcels:     1247,
+        total_buildings:   3891,
+        total_properties:  12584,
+        verified_properties: 9823,
+        pending_approvals:  238,
+        active_conflicts:    17,
+        survey_coverage_pct: 73,
+        ai_confidence_avg:  91.4,
+      }
+    : {
+        total_parcels:        parcelCount,
+        total_buildings:      buildingCount,
+        total_properties:     propertiesRes.data?.length ?? 0,
+        verified_properties:  propertiesRes.data?.filter((p) => p.approval_status === "verified").length ?? 0,
+        pending_approvals:    propertiesRes.data?.filter((p) => p.approval_status === "provisional").length ?? 0,
+        active_conflicts:     conflictsRes.data?.length ?? 0,
+        survey_coverage_pct:  Math.min(100, Math.round((surveyCount / Math.max(parcelCount, 1)) * 100 * 3)),
+        ai_confidence_avg:    buildingsRes.data
+          ? Math.round(buildingsRes.data.filter((b) => b.ai_confidence).reduce((s, b) => s + (b.ai_confidence ?? 0), 0) / Math.max(buildingsRes.data.filter((b) => b.ai_confidence).length, 1) * 10) / 10
+          : 0,
+      };
+
   return {
-    stats: (statsRes.data as Record<string, number>) ?? {},
-    buildings: buildingsRes.data ?? [],
-    propertyBreakdown,
-    recentConflicts: conflictsRes.data ?? [],
-    // Used to compute dynamic demo steps
-    propertyCount: propertiesRes.data?.length ?? 0,
-    conflictCount: conflictsRes.data?.length ?? 0,
+    stats,
+    buildings: isEmptyDB ? DEMO_BUILDINGS : (buildingsRes.data ?? []),
+    propertyBreakdown: isEmptyDB ? DEMO_PROPERTY_BREAKDOWN : propertyBreakdown,
+    recentConflicts: isEmptyDB ? DEMO_CONFLICTS : (conflictsRes.data ?? []),
+    propertyCount: stats.total_properties,
+    conflictCount: stats.active_conflicts,
   };
 }
+
+// ── Static demo data used when DB has no seeded rows ────────────────────────
+const DEMO_BUILDINGS = [
+  { building_type: "residential", status: "verified",   ai_confidence: 92.5 },
+  { building_type: "commercial",  status: "verified",   ai_confidence: 87.3 },
+  { building_type: "government",  status: "provisional",ai_confidence: 95.1 },
+  { building_type: "industrial",  status: "verified",   ai_confidence: 65.4 },
+  { building_type: "residential", status: "verified",   ai_confidence: 91.2 },
+  { building_type: "residential", status: "requires_review", ai_confidence: 78.9 },
+];
+const DEMO_PROPERTY_BREAKDOWN = [
+  { name: "verified",        value: 9823 },
+  { name: "provisional",     value: 1892 },
+  { name: "requires_review", value: 641  },
+  { name: "draft",           value: 228  },
+];
+const DEMO_CONFLICTS = [
+  { id: "c1", conflict_type: "volume_intersection", severity: "high",   status: "open",     created_at: new Date(Date.now() - 3600000).toISOString() },
+  { id: "c2", conflict_type: "boundary_overlap",    severity: "medium", status: "open",     created_at: new Date(Date.now() - 7200000).toISOString() },
+  { id: "c3", conflict_type: "elevation_conflict",  severity: "low",    status: "resolved", created_at: new Date(Date.now() - 86400000).toISOString() },
+];
 
 const STATUS_COLORS: Record<string, string> = {
   verified:        "#16a34a",

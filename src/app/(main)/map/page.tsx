@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMapStore } from "@/store/mapStore";
 import { supabase } from "@/lib/supabase";
+import { loadCesium, hasCesiumToken } from "@/lib/cesium-loader";
 import {
   Layers, ChevronLeft, ChevronRight, ArrowDownFromLine, AlertTriangle
 } from "lucide-react";
@@ -237,13 +239,14 @@ async function loadDemoData() {
     }
   }
 
-export default function MapPage() {
+function MapPageInner() {
   const cesiumContainer = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<unknown>(null);
   const cesiumRef = useRef<unknown>(null);
   const osmBuildingsRef = useRef<unknown>(null); // tracks loaded OSM tileset
   const [cesiumLoaded, setCesiumLoaded] = useState<number>(0);
   const [cesiumError, setCesiumError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
   const [osmActive, setOsmActive] = useState(false); // true once OSM buildings loaded
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
@@ -256,30 +259,11 @@ export default function MapPage() {
 
     async function initCesium() {
       try {
-        const CDN = "https://unpkg.com/cesium@1.122.0/Build/Cesium";
-        (window as Record<string, any>).CESIUM_BASE_URL = CDN;
-
-        // Inject Cesium CSS from CDN (once)
-        if (!document.querySelector("link[data-cesium-css]")) {
-          const link = document.createElement("link");
-          link.rel = "stylesheet";
-          link.href = `${CDN}/Widgets/widgets.css`;
-          link.dataset.cesiumCss = "1";
-          document.head.appendChild(link);
-        }
-
-        // Load Cesium via script tag from CDN
-        const Cesium = await new Promise<Record<string, any>>((resolve, reject) => {
-          if ((window as Record<string, any>).Cesium) return resolve((window as Record<string, any>).Cesium);
-          const script = document.createElement("script");
-          script.src = `${CDN}/Cesium.js`;
-          script.onload = () => resolve((window as Record<string, any>).Cesium);
-          script.onerror = () => reject(new Error("Failed to load Cesium from CDN"));
-          document.head.appendChild(script);
-        });
+        // Use singleton loader — no duplicate script injection
+        const Cesium = await loadCesium();
 
         const token = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
-        const hasToken = !!(token && token !== "your-cesium-ion-token-from-cesium.com");
+        const hasToken = hasCesiumToken();
         if (hasToken) Cesium.Ion.defaultAccessToken = token;
 
         if (!isMounted || !cesiumContainer.current) return;
@@ -424,6 +408,70 @@ export default function MapPage() {
     scene.globe.translucency.frontFaceAlpha = isUndergroundMode ? 0.3 : 1.0;
   }, [isUndergroundMode]);
 
+  // ─── Layer visibility → Cesium scene ────────────────────────────────────────
+  // When a layer is toggled in LayerPanel, reflect it in the Cesium viewer:
+  //   - "buildings" layer → OSM tileset show/hide
+  //   - all other layers → entity visibility (entities are tagged by name prefix)
+  const { layers } = useMapStore();
+  useEffect(() => {
+    if (!cesiumLoaded || !viewerRef.current) return;
+    const v = viewerRef.current as any;
+
+    // OSM buildings tileset (if loaded)
+    if (osmBuildingsRef.current) {
+      (osmBuildingsRef.current as any).show = layers.buildings?.visible ?? true;
+    }
+
+    // Entity visibility — map LayerId to entity name patterns
+    const LAYER_NAME_MAP: Record<string, string> = {
+      cadastral_parcels: "Urban Tower",
+      buildings: "Urban Tower",
+      conflicts: "Conflict",
+    };
+
+    try {
+      const entityCollection = v.entities as { values: any[] };
+      entityCollection.values?.forEach((entity: any) => {
+        const name: string = entity.name ?? "";
+        let visible = true;
+        if (name.includes("Urban Tower") || name.includes("Residential") || name.includes("Commercial") || name.includes("Industrial") || name.includes("Government")) {
+          visible = layers.buildings?.visible ?? true;
+        }
+        if (name.includes("Exploded") || name.includes("Floor")) {
+          visible = layers.floors?.visible ?? true;
+        }
+        entity.show = visible;
+      });
+    } catch { /* Cesium not ready */ }
+  }, [layers, cesiumLoaded]);
+
+  // ─── Search param → fly camera to matching property pin ────────────────────
+  useEffect(() => {
+    const query = searchParams.get("search")?.toLowerCase() ?? "";
+    if (!query || !cesiumLoaded || !viewerRef.current || !cesiumRef.current) return;
+    const Cesium = cesiumRef.current as any;
+    const match = PROPERTY_PINS.find(
+      (p) =>
+        p.name.toLowerCase().includes(query) ||
+        p.spid.toLowerCase().includes(query) ||
+        p.type.toLowerCase().includes(query)
+    );
+    if (!match) return;
+    const building = BUILDING_FOOTPRINTS.find((b) => b.name === match.name);
+    const altitude = TERRAIN_BASE + (building?.height ?? 50) + 100;
+    try {
+      (viewerRef.current as any).camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(match.lon, match.lat, altitude),
+        orientation: {
+          heading: Cesium.Math.toRadians(0),
+          pitch: Cesium.Math.toRadians(-35),
+          roll: 0,
+        },
+        duration: 2,
+      });
+    } catch { /* viewer not ready */ }
+  }, [searchParams, cesiumLoaded]);
+
   return (
     <div className="flex h-full overflow-hidden relative bg-[var(--color-paper)]">
       {/* Left sidebar */}
@@ -468,6 +516,16 @@ export default function MapPage() {
                 }}>
                 <div className={`w-1.5 h-1.5 rounded-full ${osmActive ? "bg-green-400" : "bg-orange-400"}`} />
                 {osmActive ? "OSM 3D Buildings Active" : "Polygon Fallback Mode — Add Ion token for real buildings"}
+              </div>
+            </div>
+          )}
+
+          {/* Search result indicator */}
+          {cesiumLoaded > 0 && searchParams.get("search") && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
+              <div className="px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-2"
+                style={{ background: "rgba(37,99,235,0.15)", border: "1px solid rgba(37,99,235,0.3)", color: "#2563eb" }}>
+                🔍 Searching: "{searchParams.get("search")}"
               </div>
             </div>
           )}
@@ -524,4 +582,11 @@ export default function MapPage() {
   );
 }
 
-
+// Suspense required by Next.js for useSearchParams in a page component
+export default function MapPage() {
+  return (
+    <Suspense>
+      <MapPageInner />
+    </Suspense>
+  );
+}

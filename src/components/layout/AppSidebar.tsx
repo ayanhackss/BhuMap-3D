@@ -42,8 +42,15 @@ export function AppSidebar() {
   const router = useRouter();
 
   function handleLogout() {
-    logout();
-    router.push("/login");
+    // Clear cookie via API then redirect
+    fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "clear" }),
+    }).finally(() => {
+      logout();
+      router.push("/login");
+    });
   }
 
   // User initial for avatar

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { ScrollText, Search } from "lucide-react";
 
 const MOCK_AUDIT = [
@@ -26,7 +26,7 @@ export default function AuditPage() {
             type="text"
             placeholder="Search logs..."
             className="pl-9 pr-4 py-1.5 rounded-md text-sm outline-none"
-            style={{ background: "var(--color-paper)", border: "1px solid var(--color-border)", color: "white" }}
+            style={{ background: "var(--color-paper)", border: "1px solid var(--color-border)", color: "var(--color-ink)" }}
           />
         </div>
       </div>

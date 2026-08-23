@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -35,7 +35,7 @@ export default function PropertiesPage() {
             type="text"
             placeholder="Search 3DSPID..."
             className="pl-9 pr-4 py-1.5 rounded-md text-sm outline-none"
-            style={{ background: "var(--color-paper)", border: "1px solid var(--color-border)", color: "white" }}
+            style={{ background: "var(--color-paper)", border: "1px solid var(--color-border)", color: "var(--color-ink)" }}
           />
         </div>
       </div>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMapStore } from "@/store/mapStore";
 import Link from "next/link";
@@ -44,13 +44,13 @@ export function RightPanel() {
       <div className="px-3 py-2 flex-shrink-0 flex items-center gap-1.5" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <button onClick={toggleExplodedView}
           className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all"
-          style={{ background: isExplodedView ? "rgba(21,101,192,0.4)" : "var(--color-paper-2)", color: isExplodedView ? "#90caf9" : "var(--color-muted)", border: `1px solid ${isExplodedView ? "rgba(21,101,192,0.6)" : "var(--color-rule)"}` }}>
+          style={{ background: isExplodedView ? "rgba(59,130,246,0.12)" : "var(--color-paper-2)", color: isExplodedView ? "#2563eb" : "var(--color-muted)", border: `1px solid ${isExplodedView ? "rgba(59,130,246,0.4)" : "var(--color-rule)"}` }}>
           <Layers className="w-3 h-3" />
           Explode
         </button>
         <button onClick={toggleUndergroundMode}
           className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all"
-          style={{ background: isUndergroundMode ? "rgba(183,28,28,0.3)" : "var(--color-paper-2)", color: isUndergroundMode ? "#ef9a9a" : "var(--color-muted)", border: `1px solid ${isUndergroundMode ? "rgba(183,28,28,0.5)" : "var(--color-rule)"}` }}>
+          style={{ background: isUndergroundMode ? "rgba(220,38,38,0.1)" : "var(--color-paper-2)", color: isUndergroundMode ? "#dc2626" : "var(--color-muted)", border: `1px solid ${isUndergroundMode ? "rgba(220,38,38,0.3)" : "var(--color-rule)"}` }}>
           <ArrowDownFromLine className="w-3 h-3" />
           Underground
         </button>
@@ -71,7 +71,7 @@ export function RightPanel() {
           {/* 3DSPID */}
           <div className="mb-3 p-2.5 rounded-lg" style={{ background: "var(--color-paper-2)" }}>
             <div className="text-xs mb-1" style={{ color: "var(--color-muted)" }}>3D Spatial Property ID</div>
-            <div className="font-mono-id text-white break-all">{property.spid_3d}</div>
+            <div className="font-mono-id break-all" style={{ color: "var(--color-accent)" }}>{property.spid_3d}</div>
           </div>
 
           {/* Key fields */}
@@ -107,7 +107,7 @@ export function RightPanel() {
             ].map((d) => (
               <div key={d.label} className="p-2 rounded-lg text-xs" style={{ background: "var(--color-paper-2)" }}>
                 <div style={{ color: "var(--color-muted)" }}>{d.label}</div>
-                <div className="font-medium text-white mt-0.5">{d.value}</div>
+                <div className="font-medium mt-0.5" style={{ color: "var(--color-ink)" }}>{d.value}</div>
               </div>
             ))}
           </div>
@@ -132,14 +132,14 @@ export function RightPanel() {
                 <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--color-surface-3)" }}>
                   <div className="h-full rounded-full" style={{ width: `${property.quality_score}%`, background: "#42a5f5" }} />
                 </div>
-                <span className="font-medium" style={{ color: "#90caf9" }}>{property.quality_score}%</span>
+                <span className="font-medium" style={{ color: "#2563eb" }}>{property.quality_score}%</span>
               </div>
             </div>
             <div className="flex items-center justify-between text-xs">
               <span style={{ color: "var(--color-muted)" }}>Topology</span>
               <div className="flex items-center gap-1">
-                <CheckCircle className="w-3 h-3 text-green-400" />
-                <span className="text-green-400 font-medium">Valid</span>
+                <CheckCircle className="w-3 h-3 text-green-600" />
+                <span className="text-green-600 font-medium">Valid</span>
               </div>
             </div>
           </div>
