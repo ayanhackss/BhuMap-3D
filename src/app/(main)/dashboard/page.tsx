@@ -71,7 +71,18 @@ async function fetchAllDashboardData() {
   };
 }
 
-// ── Static demo data used when DB has no seeded rows ────────────────────────
+// ── Type for the stats object returned by fetchAllDashboardData ─────────────
+interface DashboardStats {
+  total_parcels:        number;
+  total_buildings:      number;
+  total_properties:     number;
+  verified_properties:  number;
+  pending_approvals:    number;
+  active_conflicts:     number;
+  survey_coverage_pct:  number;
+  ai_confidence_avg:    number;
+}
+
 const DEMO_BUILDINGS = [
   { building_type: "residential", status: "verified",   ai_confidence: 92.5 },
   { building_type: "commercial",  status: "verified",   ai_confidence: 87.3 },
@@ -149,14 +160,14 @@ export default function DashboardPage() {
   ];
 
   const KPI_CARDS = [
-    { label: "Total Parcels",       value: stats.total_parcels      ?? 0, icon: FileText,      color: "#1565c0", link: "/parcels",    sublabel: "Active cadastral parcels" },
-    { label: "3D Mapped",           value: stats.mapped_3d          ?? 0, icon: Map,           color: "#0288d1", link: "/map",        sublabel: "Parcels with 3D data" },
-    { label: "Buildings",           value: stats.total_buildings    ?? 0, icon: Building2,     color: "#00796b", link: "/buildings",  sublabel: "Extracted buildings" },
-    { label: "Property Units",      value: stats.total_properties   ?? 0, icon: Home,          color: "#7b1fa2", link: "/properties", sublabel: "3DSPID-registered units" },
-    { label: "Underground Assets",  value: stats.underground_assets ?? 0, icon: Layers,        color: "#e65100", link: "/map",        sublabel: "Utility networks" },
-    { label: "Pending Verification",value: stats.pending_verification ?? 0, icon: Clock,       color: "#f57f17", link: "/approvals",  sublabel: "Awaiting review" },
-    { label: "Open Conflicts",      value: stats.open_conflicts     ?? 0, icon: AlertTriangle, color: "#b71c1c", link: "/conflicts",  sublabel: "Spatial conflicts detected" },
-    { label: "High Confidence",     value: stats.high_confidence    ?? 0, icon: TrendingUp,    color: "#2e7d32", link: "/properties", sublabel: "AI confidence ≥ 80%" },
+    { label: "Total Parcels",       value: (stats as DashboardStats).total_parcels       ?? 0, icon: FileText,      color: "#1565c0", link: "/parcels",    sublabel: "Active cadastral parcels" },
+    { label: "Buildings",           value: (stats as DashboardStats).total_buildings      ?? 0, icon: Building2,     color: "#00796b", link: "/buildings",  sublabel: "Extracted buildings" },
+    { label: "Property Units",      value: (stats as DashboardStats).total_properties     ?? 0, icon: Home,          color: "#7b1fa2", link: "/properties", sublabel: "3DSPID-registered units" },
+    { label: "Verified Properties", value: (stats as DashboardStats).verified_properties  ?? 0, icon: CheckSquare,   color: "#2e7d32", link: "/properties", sublabel: "Approved property units" },
+    { label: "Pending Approvals",   value: (stats as DashboardStats).pending_approvals     ?? 0, icon: Clock,        color: "#f57f17", link: "/approvals",  sublabel: "Awaiting review" },
+    { label: "Open Conflicts",      value: (stats as DashboardStats).active_conflicts      ?? 0, icon: AlertTriangle, color: "#b71c1c", link: "/conflicts",  sublabel: "Spatial conflicts detected" },
+    { label: "Survey Coverage",     value: (stats as DashboardStats).survey_coverage_pct   ?? 0, icon: Map,          color: "#0288d1", link: "/map",        sublabel: "% area surveyed" },
+    { label: "AI Confidence Avg",   value: (stats as DashboardStats).ai_confidence_avg     ?? 0, icon: TrendingUp,   color: "#5c6bc0", link: "/buildings",  sublabel: "Average AI score %" },
   ];
 
   // Computed demo steps — done state based on real data
@@ -166,7 +177,7 @@ export default function DashboardPage() {
     { step: "3", label: "View 3DSPID identifiers",   href: "/properties", done: (data?.propertyCount ?? 0) > 0 },
     { step: "4", label: "Enable Underground Mode",   href: "/map",       done: false },
     { step: "5", label: "Run Conflict Detection",    href: "/conflicts",  done: (data?.conflictCount ?? 0) > 0 },
-    { step: "6", label: "Approve in Workflow",       href: "/approvals",  done: (stats.pending_verification ?? 0) === 0 && !isLoading },
+    { step: "6", label: "Approve in Workflow",       href: "/approvals",  done: ((stats as DashboardStats).pending_approvals ?? 0) === 0 && !isLoading },
     { step: "7", label: "Generate PDF Report",       href: "/reports",    done: false },
   ];
 
