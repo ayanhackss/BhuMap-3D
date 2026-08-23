@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+/* ── 3D-BhuMap Design System — Dark Navy · Bricolage Grotesque ── */
+
+@theme {
+  /* ── Color Palette ── */
+  --color-bg:        #0d1520;   /* deepest navy — page background */
+  --color-surface:   #131f2e;   /* sidebar, panels */
+  --color-surface-2: #1a2a3d;   /* cards, inputs */
+  --color-surface-3: #1f3350;   /* hover, active bg */
+  --color-border:    #243447;   /* dividers */
+  --color-border-2:  #2d4060;   /* slightly stronger border */
+
+  --color-text:      #e8edf3;   /* primary text */
+  --color-text-2:    #8fa3bc;   /* secondary / muted */
+  --color-text-3:    #526070;   /* very muted */
+
+  --color-accent:    #3b82f6;   /* signal blue */
+  --color-accent-2:  #1d4ed8;   /* darker blue for pressed */
+  --color-green:     #22c55e;
+  --color-orange:    #f59e0b;
+  --color-red:       #ef4444;
+
+  /* Legacy aliases kept for components not yet migrated */
+  --color-paper:     var(--color-paper);
+  --color-paper-2:   var(--color-paper-2);
+  --color-rule:      var(--color-border);
+  --color-ink:       var(--color-text);
+  --color-muted:     var(--color-text-2);
+  --color-neutral:   var(--color-text-2);
+  --color-background: var(--color-bg);
+  --color-primary:   var(--color-accent);
+  --color-primary-light: #60a5fa;
+  --color-warning:   var(--color-orange);
+
+  /* ── Typography ── */
+  --font-family-sans: "Bricolage Grotesque", var(--font-bricolage), system-ui, sans-serif;
+  --font-family-mono: "Geist Mono", "JetBrains Mono", monospace;
+}
+
+/* ── Base Reset ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #f5f6fa;
+  color: #111827;
+  font-family: "Bricolage Grotesque", var(--font-bricolage), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Explicit CSS custom properties (ensures var() works everywhere) ── */
+:root {
+  /* Core light palette */
+  --color-bg:         #f5f6fa;
+  --color-surface:    #ffffff;
+  --color-surface-2:  #f0f2f7;
+  --color-surface-3:  #e5e8f0;
+  --color-border:     #e2e6ef;
+  --color-border-2:   #d0d5e3;
+
+  /* Text */
+  --color-text:       #111827;
+  --color-text-2:     #6b7280;
+  --color-text-3:     #9ca3af;
+
+  /* Accent */
+  --color-accent:     #3b82f6;
+  --color-green:      #16a34a;
+  --color-orange:     #d97706;
+  --color-red:        #dc2626;
+
+  /* Legacy aliases — used throughout the codebase */
+  --color-paper:      #ffffff;
+  --color-paper-2:    #f0f2f7;
+  --color-rule:       #e2e6ef;
+  --color-ink:        #111827;
+  --color-muted:      #6b7280;
+  --color-neutral:    #374151;
+  --color-background: #f5f6fa;
+  --color-primary:    #3b82f6;
+  --color-primary-light: #60a5fa;
+  --color-warning:    #d97706;
+
+  /* Fonts */
+  --font-family-sans: "Bricolage Grotesque", var(--font-bricolage), system-ui, sans-serif;
+  --font-family-mono: "Geist Mono", "JetBrains Mono", monospace;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-3); }
+
+/* ── Headings ── */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+/* ── Utility Classes ── */
+
+/* Status badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.badge-verified  { background: rgba(34,197,94,0.15);  color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+.badge-provisional { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+.badge-draft     { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
+.badge-rejected  { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+.badge-processing { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+
+/* Legacy badge classes for compatibility */
+.badge-verified.badge,
+.badge-provisional.badge,
+.badge-draft.badge,
+.badge-rejected.badge { }
+
+/* Monospace IDs */
+.font-mono-id {
+  font-family: var(--font-family-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+/* ── Home page hero ── */
+.hero-marquee {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 3rem;
+}
+.hero-marquee h1 {
+  font-size: clamp(2.5rem, 5vw + 0.5rem, 4.75rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  max-width: 20ch;
+  margin-bottom: 2rem;
+}
+
+/* Pill buttons */
+.btn-primary {
+  background: var(--color-accent);
+  color: #fff;
+  border-radius: 9999px;
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: opacity 0.15s;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-primary:hover { opacity: 0.88; }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  padding: 0.5rem 1.25rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: background-color 0.15s;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-secondary:hover { background: var(--color-paper-2); }
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--color-paper-2) 25%, var(--color-surface-3) 50%, var(--color-paper-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Map container */
+#cesium-container { width: 100%; height: 100%; }
