@@ -44,6 +44,7 @@ function LoginForm() {
     setLoading(true);
     setError("");
 
+    // ── Demo bypass ─────────────────────────────────────────────────────────
     const demoUser = DEMO_USERS.find(u => u.email === email);
     if (demoUser && password === demoUser.password) {
       const roleMap: Record<string, string> = {
@@ -59,11 +60,15 @@ function LoginForm() {
         role: roleMap[demoUser.role] as never,
         department: "Demo Department",
       });
-      setSessionCookie();   // ← write cookie for Edge middleware
+      // BUG FIX 1: await cookie write BEFORE redirect — middleware must see
+      // the cookie on the very first request to the protected route.
+      await setSessionCookie();
       redirectAfterLogin();
+      // setLoading(false) intentionally omitted — page will unmount on redirect
       return;
     }
 
+    // ── Supabase auth ────────────────────────────────────────────────────────
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
     if (authError) {
       setError("Invalid credentials. Use demo credentials below.");
@@ -85,9 +90,14 @@ function LoginForm() {
         role: profile?.role ?? "public_viewer",
         department: profile?.department ?? undefined,
       });
-      setSessionCookie();   // ← write cookie for Edge middleware
+      // BUG FIX 2: await cookie write BEFORE redirect here too
+      await setSessionCookie();
       redirectAfterLogin();
+      return; // BUG FIX 3: early return — don't fall through to setLoading(false) below
     }
+
+    // Reached only if data.user was null without an error (edge case)
+    setError("Authentication failed. Please try again.");
     setLoading(false);
   }
 

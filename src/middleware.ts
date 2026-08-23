@@ -5,14 +5,13 @@ import type { NextRequest } from "next/server";
  * Edge middleware auth guard.
  *
  * Reads the explicit "bhumap-session" cookie that the login page writes on
- * successful authentication. We use a dedicated cookie (not Zustand's
- * localStorage persist) because:
+ * successful authentication via POST /api/auth/session (server-side, so the
+ * cookie is present on the very next navigation request).
+ *
+ * We use a dedicated server-set cookie (not Zustand localStorage) because:
  *   - localStorage is browser-side only — middleware runs on the Edge
  *   - Zustand persist uses localStorage by default, not cookies
- *
- * The login page must call:
- *   document.cookie = "bhumap-session=1; path=/; max-age=86400; SameSite=Lax";
- * on success, and clear it on logout.
+ *   - document.cookie writes are not available to Edge middleware
  */
 export function middleware(request: NextRequest) {
   const session = request.cookies.get("bhumap-session")?.value;
